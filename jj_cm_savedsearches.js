@@ -8361,6 +8361,7 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                     return { status: 'ERROR', reason: e.message, data: [] };
                 }
             },
+            
             /**
              * Function to generate and execute the SQL query with dynamic filtering.
              *
@@ -8816,8 +8817,6 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                     // Format dates for SQL query
                     const sqlStartDate = startDate + ' 00:00:00';
                     const sqlEndDate = endDate + ' 23:59:59';
-                    // const sqlStartDate = '2026-03-10' + ' 00:00:00';
-                    // const sqlEndDate = '2026-03-10' + ' 23:59:59';
 
                     log.debug("getOverallEfficiencyData - Parameters", {
                         location: location,
@@ -8911,9 +8910,9 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
 
                     // Execute the query
                     let rawResults = query.runSuiteQL({ query: sqlQuery }).asMappedResults();
-
+                    
                     log.debug("getOverallEfficiencyData - Raw Results Count", rawResults.length);
-
+                    
                     // Log first 10 raw results to see bag data
                     let rawLogMsg = "=== RAW QUERY RESULTS (First 10) ===\n";
                     rawResults.slice(0, 10).forEach((record, idx) => {
@@ -8934,26 +8933,18 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                         const categoryName = record.category_name;
                         const printDesignName = record.print_design_name;
 
-                        if (!locationId || !departmentId) {
-                            return;
-                        }
+                        if (!locationId || !departmentId) return;
 
                         // Aggregate pieces data per department
                         if (!deptPiecesMap[departmentId]) {
-                            deptPiecesMap[departmentId] = {
-                                issued_pieces_diamond: 0,
-                                loss_pieces_diamond: 0
-                            };
+                            deptPiecesMap[departmentId] = { issued_pieces_diamond: 0, loss_pieces_diamond: 0 };
                         }
                         deptPiecesMap[departmentId].issued_pieces_diamond += parseFloat(record.issued_pieces_diamond || 0);
                         deptPiecesMap[departmentId].loss_pieces_diamond += parseFloat(record.loss_pieces_diamond || 0);
 
                         // Initialize location if not exists
                         if (!groupedData[locationId]) {
-                            groupedData[locationId] = {
-                                location_name: record.location_name,
-                                departments: {}
-                            };
+                            groupedData[locationId] = { location_name: record.location_name, departments: {} };
                         }
 
                         // Initialize department if not exists
@@ -8972,9 +8963,7 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                         }
 
                         // Add unique bag to department
-                        if (bagName) {
-                            groupedData[locationId].departments[departmentId].unique_bags.add(bagName);
-                        }
+                        if (bagName) groupedData[locationId].departments[departmentId].unique_bags.add(bagName);
 
                         // Add unique category to department
                         if (categoryName) {
@@ -9004,9 +8993,8 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                 };
                             }
                             // Add unique bag to employee
-                            if (bagName) {
-                                groupedData[locationId].departments[departmentId].employees[employeeId].unique_bags.add(bagName);
-                            }
+                            if (bagName) groupedData[locationId].departments[departmentId].employees[employeeId].unique_bags.add(bagName);
+
                             // Add unique category to employee
                             if (categoryName) {
                                 groupedData[locationId].departments[departmentId].employees[employeeId].unique_categories.add(categoryName);
@@ -9024,9 +9012,7 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                     });
 
                     // Convert employees object to array and bags Set to count for each department and employee
-                    let logMessage = "=== DEPARTMENT & EMPLOYEE BAG COUNTS ===\n";
                     Object.keys(groupedData).forEach(locationId => {
-                        logMessage += `Location ${locationId}: ${groupedData[locationId].location_name}\n`;
                         Object.keys(groupedData[locationId].departments).forEach(departmentId => {
                             const dept = groupedData[locationId].departments[departmentId];
                             // Serialize category_bags_map Sets to counts
@@ -9053,26 +9039,19 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                     categories: []
                                 };
                             });
+
                             dept.bag_count = dept.unique_bags.size;
                             dept.unique_bags_array = Array.from(dept.unique_bags);
                             dept.category_count = dept.unique_categories.size;
                             dept.unique_categories_array = Array.from(dept.unique_categories);
                             dept.category_bag_count_map = deptCategoryBagCountMap;
-
-                            logMessage += `  Dept ${departmentId} (${dept.department_name}): ${dept.bag_count} bags, ${dept.category_count} categories | Employees: ${dept.employees_array.length}\n`;
-                            logMessage += `    Dept Bags: [${dept.unique_bags_array.join(', ')}]\n`;
-                            logMessage += `    Dept Categories: [${dept.unique_categories_array.join(', ')}]\n`;
-                            dept.employees_array.forEach(emp => {
-                                logMessage += `    - Employee: ${emp.name} | Bags: ${emp.bag_count} | Categories: ${emp.category_count} | Bag Names: [${emp.unique_bags_array.join(', ')}] | Categories: [${emp.unique_categories_array.join(', ')}]\n`;
-                            });
-
+                            
                             delete dept.employees;
                             delete dept.unique_bags;
                             delete dept.unique_categories;
                             delete dept.category_bags_map;
                         });
                     });
-                    logMessage += "========================================";
 
                     // Set starting_qty to 0 for all departments
                     Object.keys(groupedData).forEach(locationId => {
@@ -9080,7 +9059,7 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                             groupedData[locationId].departments[departmentId].starting_qty = 0;
                         });
                     });
-
+                    
                     // Fetch starting_qty for each department
                     try {
                         const deptIds = [];
@@ -9089,9 +9068,9 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                 deptIds.push(departmentId);
                             });
                         });
-
+                        
                         log.debug("getOverallEfficiencyData - Starting Qty Fetch", "Department IDs: " + deptIds.join(','));
-
+                        
                         if (deptIds.length > 0) {
                             let startingQtyQuery = `
                                 SELECT 
@@ -9142,31 +9121,25 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                     AND BUILTIN.CAST_AS(op.custrecord_jj_oprtns_exit, 'TIMESTAMP_TZ_TRUNCED') < TO_DATE('${sqlEndDate}', 'YYYY-MM-DD HH24:MI:SS')
                                 GROUP BY op.custrecord_jj_oprtns_department, op.custrecord_jj_oprtns_employee, BUILTIN.DF(printdesign.custitem_jj_category)
                             `;
-
+                            
                             log.debug("getOverallEfficiencyData - Starting Qty Query", "Executing query with category-level aggregation");
                             let startingQtyResults = query.runSuiteQL({ query: startingQtyQuery }).asMappedResults();
-
+                            
                             log.debug("getOverallEfficiencyData - Starting Qty Results Count", startingQtyResults.length);
-
-                            // **DIAGNOSTIC LOGGING: Inspect actual query results**
-                            let diagnosticLog = "=== DIAGNOSTIC: FIRST 5 QUERY RESULTS ===\n";
-                            let nullEmployeeCount = 0;
-                            let validEmployeeCount = 0;
-
+                            
                             // Create maps for department-level and category-level data
-                            const startingQtyMap = {}; // dept_id -> qty
-                            const lossQtyMap = {}; // dept_id -> qty
-                            const categoryQtyMap = {}; // dept_id_category -> {starting_qty_gold, starting_qty_diamond, issued_qty_gold, issued_qty_diamond, loss_qty_gold, loss_qty_diamond, scrap_qty_gold, scrap_qty_diamond, balance_qty_gold, balance_qty_diamond}
-                            const employeeCategoryQtyMap = {}; // dept_id_emp_id_category -> {quantities}
-
-                            const employeeLevelMap = {}; // dept_id_emp_id -> {starting_qty, loss_qty, categories: []}
-
+                            const startingQtyMap = {};
+                            const lossQtyMap = {};
+                            const categoryQtyMap = {};
+                            const employeeCategoryQtyMap = {};
+                            const employeeLevelMap = {};
+                            
                             startingQtyResults.forEach(record => {
                                 const deptId = record.department_id;
-                                const employeeId = record.employee_id; // Can be NULL
+                                const employeeId = record.employee_id;
                                 const category = record.category_name || 'N/A';
                                 const deptCatKey = `${deptId}_${category}`;
-
+                                
                                 // **ALWAYS: Accumulate department-level totals (regardless of employee)**
                                 if (!startingQtyMap[deptId]) {
                                     startingQtyMap[deptId] = 0;
@@ -9174,7 +9147,7 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                 }
                                 startingQtyMap[deptId] += parseFloat(record.starting_qty_gold || 0) + parseFloat(record.starting_qty_diamond || 0);
                                 lossQtyMap[deptId] += parseFloat(record.loss_qty_gold || 0) + parseFloat(record.loss_qty_diamond || 0);
-
+                                
                                 // **ALWAYS: Store category-level data separated by class (regardless of employee)**
                                 if (!categoryQtyMap[deptCatKey]) {
                                     categoryQtyMap[deptCatKey] = {
@@ -9194,9 +9167,7 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                 }
 
                                 // **ONLY IF EMPLOYEE EXISTS: Process employee-level data**
-                                if (!employeeId) {
-                                    return; // Skip only employee-level processing, NOT department/category processing
-                                }
+                                if (!employeeId) return;
 
                                 const empCatKey = `${deptId}_${employeeId}_${category}`;
                                 const empKey = `${deptId}_${employeeId}`;
@@ -9219,11 +9190,7 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
 
                                 // Initialize employee-level aggregation
                                 if (!employeeLevelMap[empKey]) {
-                                    employeeLevelMap[empKey] = {
-                                        starting_qty: 0,
-                                        loss_qty: 0,
-                                        categories: []
-                                    };
+                                    employeeLevelMap[empKey] = { starting_qty: 0, loss_qty: 0, categories: [] };
                                 }
 
                                 // Add category data to employee
@@ -9242,12 +9209,12 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                     issued_pieces_diamond: parseFloat(record.issued_pieces_diamond || 0),
                                     loss_pieces_diamond: parseFloat(record.loss_pieces_diamond || 0)
                                 });
-
+                                
                                 // Accumulate employee-level totals
                                 employeeLevelMap[empKey].starting_qty += parseFloat(record.starting_qty_gold || 0) + parseFloat(record.starting_qty_diamond || 0);
                                 employeeLevelMap[empKey].loss_qty += parseFloat(record.loss_qty_gold || 0) + parseFloat(record.loss_qty_diamond || 0);
                             });
-
+                            
                             // **SUMMARIZED LOG - Single comprehensive summary**
                             let summaryLog = "=== EFFICIENCY DATA FETCH SUMMARY ===\n";
                             summaryLog += `Total Records Fetched: ${startingQtyResults.length}\n`;
@@ -9258,7 +9225,7 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                             summaryLog += `Employee Level Map Entries: ${Object.keys(employeeLevelMap).length}\n`;
                             summaryLog += "=====================================";
                             log.debug("getOverallEfficiencyData - Data Fetch Summary", summaryLog);
-
+                            
                             Object.keys(groupedData).forEach(locationId => {
                                 Object.keys(groupedData[locationId].departments).forEach(departmentId => {
                                     groupedData[locationId].departments[departmentId].starting_qty = startingQtyMap[departmentId] || 0;
@@ -9267,7 +9234,7 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                     groupedData[locationId].departments[departmentId].employee_category_qty_map = employeeCategoryQtyMap;
                                     groupedData[locationId].departments[departmentId].issued_pieces_diamond = deptPiecesMap[departmentId]?.issued_pieces_diamond || 0;
                                     groupedData[locationId].departments[departmentId].loss_pieces_diamond = deptPiecesMap[departmentId]?.loss_pieces_diamond || 0;
-
+                                    
                                     groupedData[locationId].departments[departmentId].employees_array.forEach(emp => {
                                         const empKey = `${departmentId}_${emp.employee_id}`;
                                         const empLevelData = employeeLevelMap[empKey];
