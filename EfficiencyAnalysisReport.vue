@@ -456,7 +456,8 @@
                                 <!-- <th class="px-3 py-2 text-left font-semibold">Dates</th> -->
                                 <th class="px-3 py-2 text-left font-semibold">No. of Bags</th>
                                 <th class="px-3 py-2 text-left font-semibold">Item category</th>
-                                <th class="px-3 py-2 text-left font-semibold">Print Design (Assembly Item)</th>
+                                <th class="px-3 py-2 text-left font-semibold">Style Number</th>
+                                <th class="px-3 py-2 text-left font-semibold">Bags</th>
 
                                 <th class="px-3 py-2 text-left font-semibold">TM Production Gold</th>
                                 <!-- <th class="px-3 py-2 text-left font-semibold">Issued Qty Gold</th> -->
@@ -502,6 +503,9 @@
 
                                         <!-- Print Design (Assembly Item) -->
                                         <td class="px-3 py-2 group-hover:shadow-md">{{ dept.category_print_design_map?.[category] || '-' }}</td>
+
+                                        <!-- Bags (per category) -->
+                                        <td class="px-3 py-2 group-hover:shadow-md text-center bg-blue-50">{{ dept.category_bag_count_map?.[category] || 0 }}</td>
 
                                         <!-- Starting Qty Gold -->
                                         <td class="px-3 py-2 group-hover:shadow-md">{{ getCategoryStartingQty(dept, category) }}</td>
@@ -573,6 +577,9 @@
                                 <!-- Print Design (empty) -->
                                 <td class="px-3 py-2 font-semibold"></td>
 
+                                <!-- Bags (empty) -->
+                                <td class="px-3 py-2 font-semibold"></td>
+
                                 <!-- Starting Qty Gold -->
                                 <td class="px-3 py-2">{{ totalDeptStartingQuantityGold }}</td>
 
@@ -640,6 +647,9 @@
                                             
                                             <!-- Print Design (Assembly Item) -->
                                             <td class="px-3 py-2 group-hover:shadow-md">{{ emp.category_print_design_map?.[category] || '-' }}</td>
+                                            
+                                            <!-- Bags (per category) -->
+                                            <td class="px-3 py-2 group-hover:shadow-md text-center bg-blue-50">{{ emp.category_bag_count_map?.[category] || 0 }}</td>
                                             
                                             <!-- Starting Qty Gold -->
                                             <td class="px-3 py-2 group-hover:shadow-md">{{ getEmployeeCategoryStartingQtyGold(emp, category) }}</td>
@@ -715,6 +725,9 @@
                                 <td class="px-3 py-2"></td>
 
                                 <!-- Print Design (empty) -->
+                                <td class="px-3 py-2"></td>
+
+                                <!-- Bags (empty) -->
                                 <td class="px-3 py-2"></td>
 
                                 <!-- Starting Qty Gold -->
@@ -1538,13 +1551,13 @@ export default {
             if (showEmployeesTable.value) {
                 // ── EMPLOYEE TABLE ──────────────────────────────────────
                 const EMP_HEADERS = [
-                    'Location','Department','Employee','No. of Bags','Item Category','Print Design (Assembly Item)',
+                    'Location','Department','Employee','No. of Bags','Item Category','Print Design (Assembly Item)','Bags',
                     'TM Production Gold','Actual Production Gold','Loss Qty Gold','Gold Loss %',
                     'TM Production Diamond','Actual Production Diamond','Loss Qty Diamond','Diamond Loss %',
                     'Gold Recovery Weight (gm)','Net Loss Gold','Diamond Recovery Weight (ct)','Net Loss Diamond'
                 ];
                 const ECOL = EMP_HEADERS.length;
-                const EMP_LOSS_COLS = [9,10,13,14,16,18];
+                const EMP_LOSS_COLS = [10,11,14,15,17,19];
                 const ehRow = ws.addRow(EMP_HEADERS);
                 styleRow(ehRow, C.headerBg, headerFont, ECOL);
                 ehRow.height = 30;
@@ -1577,9 +1590,10 @@ export default {
                                 const isFirst = ci===0;
                                 const showLoc = isFirst && !locShown;
                                 const printDesign = (emp.category_print_design_map||{})[cat] || '-';
+                                const catBagCount = (emp.category_bag_count_map||{})[cat] || 0;
                                 const dr = ws.addRow([
                                     showLoc?locName:'', isFirst?deptName:'', isFirst?empName:'',
-                                    isFirst?bagCount:'', cat, printDesign,
+                                    isFirst?bagCount:'', cat, printDesign, catBagCount,
                                     +roundToTwo(sG), +roundToTwo(aG), +roundToTwo(lG), roundToTwo(gLP)+'%',
                                     +roundToTwo(sD), +roundToTwo(aD), +roundToTwo(lD), roundToTwo(dLP)+'%',
                                     '-','-','-','-'
@@ -1591,9 +1605,9 @@ export default {
 
                             if (cats.length > 0) {
                                 const aG=sub.sG+sub.iG-sub.lG-sub.scG-sub.bG, aD=sub.sD+sub.iD-sub.lD-sub.scD-sub.bD;
-                                const sr = ws.addRow(['','',`Total (${empName})`,bagCount,'','',+roundToTwo(sub.sG),+roundToTwo(aG),+roundToTwo(sub.lG),'',+roundToTwo(sub.sD),+roundToTwo(aD),+roundToTwo(sub.lD),'','','','','']);
+                                const sr = ws.addRow(['','',`Total (${empName})`,bagCount,'','','',+roundToTwo(sub.sG),+roundToTwo(aG),+roundToTwo(sub.lG),'',+roundToTwo(sub.sD),+roundToTwo(aD),+roundToTwo(sub.lD),'','','','','']);
                                 styleRow(sr, C.subtotalBg, boldFont, ECOL);
-                                redCols(sr, [8,12]);
+                                redCols(sr, [10,14]);
                             }
                         });
                     });
@@ -1602,13 +1616,13 @@ export default {
             } else {
                 // ── DEPARTMENT TABLE ────────────────────────────────────
                 const DEPT_HEADERS = [
-                    'Location','Department','No. of Bags','Item Category','Print Design (Assembly Item)',
+                    'Location','Department','No. of Bags','Item Category','Print Design (Assembly Item)','Bags',
                     'TM Production Gold','Actual Production Gold','Loss Qty Gold','Gold Loss %',
                     'TM Production Diamond','Actual Production Diamond','Loss Qty Diamond','Diamond Loss %',
                     'Gold Recovery Weight (gm)','Net Loss Gold','Diamond Recovery Weight (ct)','Net Loss Diamond'
                 ];
                 const DCOL = DEPT_HEADERS.length;
-                const DEPT_LOSS_COLS = [8,9,12,13,15,17];
+                const DEPT_LOSS_COLS = [9,10,13,14,16,18];
                 const dhRow = ws.addRow(DEPT_HEADERS);
                 styleRow(dhRow, C.headerBg, headerFont, DCOL);
                 dhRow.height = 30;
@@ -1639,9 +1653,10 @@ export default {
                             const isFirst = ci===0;
                             const showLoc = isFirst && !locShown;
                             const printDesign = (dept.category_print_design_map||{})[cat] || '-';
+                            const catBagCount = (dept.category_bag_count_map||{})[cat] || 0;
                             const dr = ws.addRow([
                                 showLoc?locName:'', isFirst?deptName:'',
-                                isFirst?bagCount:'', cat, printDesign,
+                                isFirst?bagCount:'', cat, printDesign, catBagCount,
                                 +roundToTwo(sG), +roundToTwo(aG), +roundToTwo(lG), roundToTwo(gLP)+'%',
                                 +roundToTwo(sD), +roundToTwo(aD), +roundToTwo(lD), roundToTwo(dLP)+'%',
                                 '-','-','-','-'
@@ -1653,9 +1668,9 @@ export default {
 
                         if (cats.length > 0) {
                             const aG=sub.sG+sub.iG-sub.lG-sub.scG-sub.bG, aD=sub.sD+sub.iD-sub.lD-sub.scD-sub.bD;
-                            const sr = ws.addRow(['',`Total (${deptName})`,bagCount,'','',+roundToTwo(sub.sG),+roundToTwo(aG),+roundToTwo(sub.lG),'',+roundToTwo(sub.sD),+roundToTwo(aD),+roundToTwo(sub.lD),'','','','','']);
+                            const sr = ws.addRow(['',`Total (${deptName})`,bagCount,'','','',+roundToTwo(sub.sG),+roundToTwo(aG),+roundToTwo(sub.lG),'',+roundToTwo(sub.sD),+roundToTwo(aD),+roundToTwo(sub.lD),'','','','','']);
                             styleRow(sr, C.subtotalBg, boldFont, DCOL);
-                            redCols(sr, [8,12]);
+                            redCols(sr, [9,13]);
                         }
                     });
                 });
@@ -1664,9 +1679,9 @@ export default {
                 const allDeptBags = new Set();
                 locations.value.forEach(loc => (loc.departments||[]).forEach(dept => (dept.unique_bags_array||[]).forEach(b => allDeptBags.add(b))));
                 const grandDeptBagCount = allDeptBags.size || locations.value.reduce((s,loc)=>(loc.departments||[]).reduce((s2,dept)=>s2+parseInt(dept.bag_count||0),s),0);
-                const dgr = ws.addRow(['','GRAND TOTAL',grandDeptBagCount,'','',+roundToTwo(gt.sG),+roundToTwo(aG),+roundToTwo(gt.lG),'',+roundToTwo(gt.sD),+roundToTwo(aD),+roundToTwo(gt.lD),'','','','','']);
+                const dgr = ws.addRow(['','GRAND TOTAL',grandDeptBagCount,'','','',+roundToTwo(gt.sG),+roundToTwo(aG),+roundToTwo(gt.lG),'',+roundToTwo(gt.sD),+roundToTwo(aD),+roundToTwo(gt.lD),'','','','','']);
                 styleRow(dgr, C.grandBg, boldFont, DCOL);
-                redCols(dgr, [8,12]);
+                redCols(dgr, [9,13]);
             }
 
             // Download as .xlsx
@@ -2779,6 +2794,7 @@ export default {
                                     loss_qty: dept.loss_qty || 0,
                                     category_qty_map: dept.category_qty_map || {},
                                     category_print_design_map: dept.category_print_design_map || {},
+                                    category_bag_count_map: dept.category_bag_count_map || {},
                                     employees: (dept.employees_array || []).map(emp => {
                                         // Build category_qty_map from categories array
                                         const categoryQtyMap = {};
@@ -2811,7 +2827,8 @@ export default {
                                             loss_qty: emp.loss_qty || 0,
                                             categories: emp.categories || [],
                                             category_qty_map: categoryQtyMap,
-                                            category_print_design_map: emp.category_print_design_map || {}
+                                            category_print_design_map: emp.category_print_design_map || {},
+                                            category_bag_count_map: emp.category_bag_count_map || {}
                                         };
                                         return empObj;
                                     })

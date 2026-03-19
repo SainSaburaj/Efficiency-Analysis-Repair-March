@@ -8513,6 +8513,7 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                 unique_bags: new Set(),
                                 unique_categories: new Set(),
                                 category_print_design_map: {},
+                                category_bags_map: {},
                                 issued_pieces_diamond: 0,
                                 loss_pieces_diamond: 0
                             };
@@ -8524,6 +8525,12 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                             if (printDesignName) {
                                 groupedData[locationId].departments[departmentId].category_print_design_map[categoryName] = printDesignName;
                             }
+                            if (bagName) {
+                                if (!groupedData[locationId].departments[departmentId].category_bags_map[categoryName]) {
+                                    groupedData[locationId].departments[departmentId].category_bags_map[categoryName] = new Set();
+                                }
+                                groupedData[locationId].departments[departmentId].category_bags_map[categoryName].add(bagName);
+                            }
                         }
 
                         if (employeeId) {
@@ -8534,7 +8541,8 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                     name: fullName || "Unknown Employee",
                                     unique_bags: new Set(),
                                     unique_categories: new Set(),
-                                    category_print_design_map: {}
+                                    category_print_design_map: {},
+                                    category_bags_map: {}
                                 };
                             }
                             if (bagName) groupedData[locationId].departments[departmentId].employees[employeeId].unique_bags.add(bagName);
@@ -8543,6 +8551,12 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                 if (printDesignName) {
                                     groupedData[locationId].departments[departmentId].employees[employeeId].category_print_design_map[categoryName] = printDesignName;
                                 }
+                                if (bagName) {
+                                    if (!groupedData[locationId].departments[departmentId].employees[employeeId].category_bags_map[categoryName]) {
+                                        groupedData[locationId].departments[departmentId].employees[employeeId].category_bags_map[categoryName] = new Set();
+                                    }
+                                    groupedData[locationId].departments[departmentId].employees[employeeId].category_bags_map[categoryName].add(bagName);
+                                }
                             }
                         }
                     });
@@ -8550,25 +8564,39 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                     Object.keys(groupedData).forEach(locationId => {
                         Object.keys(groupedData[locationId].departments).forEach(departmentId => {
                             const dept = groupedData[locationId].departments[departmentId];
-                            dept.employees_array = Object.values(dept.employees).map(emp => ({
-                                employee_id: emp.employee_id,
-                                name: emp.name,
-                                bag_count: emp.unique_bags.size,
-                                unique_bags_array: Array.from(emp.unique_bags),
-                                category_count: emp.unique_categories.size,
-                                unique_categories_array: Array.from(emp.unique_categories),
-                                category_print_design_map: emp.category_print_design_map,
-                                starting_qty: 0,
-                                loss_qty: 0,
-                                categories: []
-                            }));
+                            // Serialize category_bags_map Sets to counts
+                            const deptCategoryBagCountMap = {};
+                            Object.keys(dept.category_bags_map).forEach(cat => {
+                                deptCategoryBagCountMap[cat] = dept.category_bags_map[cat].size;
+                            });
+                            dept.employees_array = Object.values(dept.employees).map(emp => {
+                                const empCategoryBagCountMap = {};
+                                Object.keys(emp.category_bags_map).forEach(cat => {
+                                    empCategoryBagCountMap[cat] = emp.category_bags_map[cat].size;
+                                });
+                                return {
+                                    employee_id: emp.employee_id,
+                                    name: emp.name,
+                                    bag_count: emp.unique_bags.size,
+                                    unique_bags_array: Array.from(emp.unique_bags),
+                                    category_count: emp.unique_categories.size,
+                                    unique_categories_array: Array.from(emp.unique_categories),
+                                    category_print_design_map: emp.category_print_design_map,
+                                    category_bag_count_map: empCategoryBagCountMap,
+                                    starting_qty: 0,
+                                    loss_qty: 0,
+                                    categories: []
+                                };
+                            });
                             dept.bag_count = dept.unique_bags.size;
                             dept.unique_bags_array = Array.from(dept.unique_bags);
                             dept.category_count = dept.unique_categories.size;
                             dept.unique_categories_array = Array.from(dept.unique_categories);
+                            dept.category_bag_count_map = deptCategoryBagCountMap;
                             delete dept.employees;
                             delete dept.unique_bags;
                             delete dept.unique_categories;
+                            delete dept.category_bags_map;
                         });
                     });
 
@@ -8937,6 +8965,7 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                 unique_bags: new Set(),
                                 unique_categories: new Set(),
                                 category_print_design_map: {},
+                                category_bags_map: {},
                                 issued_pieces_diamond: 0,
                                 loss_pieces_diamond: 0
                             };
@@ -8953,6 +8982,12 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                             if (printDesignName) {
                                 groupedData[locationId].departments[departmentId].category_print_design_map[categoryName] = printDesignName;
                             }
+                            if (bagName) {
+                                if (!groupedData[locationId].departments[departmentId].category_bags_map[categoryName]) {
+                                    groupedData[locationId].departments[departmentId].category_bags_map[categoryName] = new Set();
+                                }
+                                groupedData[locationId].departments[departmentId].category_bags_map[categoryName].add(bagName);
+                            }
                         }
 
                         // Add employee to department if employee exists
@@ -8964,7 +8999,8 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                     name: fullName || "Unknown Employee",
                                     unique_bags: new Set(),
                                     unique_categories: new Set(),
-                                    category_print_design_map: {}
+                                    category_print_design_map: {},
+                                    category_bags_map: {}
                                 };
                             }
                             // Add unique bag to employee
@@ -8977,6 +9013,12 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                 if (printDesignName) {
                                     groupedData[locationId].departments[departmentId].employees[employeeId].category_print_design_map[categoryName] = printDesignName;
                                 }
+                                if (bagName) {
+                                    if (!groupedData[locationId].departments[departmentId].employees[employeeId].category_bags_map[categoryName]) {
+                                        groupedData[locationId].departments[departmentId].employees[employeeId].category_bags_map[categoryName] = new Set();
+                                    }
+                                    groupedData[locationId].departments[departmentId].employees[employeeId].category_bags_map[categoryName].add(bagName);
+                                }
                             }
                         }
                     });
@@ -8987,22 +9029,35 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                         logMessage += `Location ${locationId}: ${groupedData[locationId].location_name}\n`;
                         Object.keys(groupedData[locationId].departments).forEach(departmentId => {
                             const dept = groupedData[locationId].departments[departmentId];
-                            dept.employees_array = Object.values(dept.employees).map(emp => ({
-                                employee_id: emp.employee_id,
-                                name: emp.name,
-                                bag_count: emp.unique_bags.size,
-                                unique_bags_array: Array.from(emp.unique_bags),
-                                category_count: emp.unique_categories.size,
-                                unique_categories_array: Array.from(emp.unique_categories),
-                                category_print_design_map: emp.category_print_design_map,
-                                starting_qty: 0,
-                                loss_qty: 0,
-                                categories: []
-                            }));
+                            // Serialize category_bags_map Sets to counts
+                            const deptCategoryBagCountMap = {};
+                            Object.keys(dept.category_bags_map).forEach(cat => {
+                                deptCategoryBagCountMap[cat] = dept.category_bags_map[cat].size;
+                            });
+                            dept.employees_array = Object.values(dept.employees).map(emp => {
+                                const empCategoryBagCountMap = {};
+                                Object.keys(emp.category_bags_map).forEach(cat => {
+                                    empCategoryBagCountMap[cat] = emp.category_bags_map[cat].size;
+                                });
+                                return {
+                                    employee_id: emp.employee_id,
+                                    name: emp.name,
+                                    bag_count: emp.unique_bags.size,
+                                    unique_bags_array: Array.from(emp.unique_bags),
+                                    category_count: emp.unique_categories.size,
+                                    unique_categories_array: Array.from(emp.unique_categories),
+                                    category_print_design_map: emp.category_print_design_map,
+                                    category_bag_count_map: empCategoryBagCountMap,
+                                    starting_qty: 0,
+                                    loss_qty: 0,
+                                    categories: []
+                                };
+                            });
                             dept.bag_count = dept.unique_bags.size;
                             dept.unique_bags_array = Array.from(dept.unique_bags);
                             dept.category_count = dept.unique_categories.size;
                             dept.unique_categories_array = Array.from(dept.unique_categories);
+                            dept.category_bag_count_map = deptCategoryBagCountMap;
 
                             logMessage += `  Dept ${departmentId} (${dept.department_name}): ${dept.bag_count} bags, ${dept.category_count} categories | Employees: ${dept.employees_array.length}\n`;
                             logMessage += `    Dept Bags: [${dept.unique_bags_array.join(', ')}]\n`;
@@ -9014,6 +9069,7 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                             delete dept.employees;
                             delete dept.unique_bags;
                             delete dept.unique_categories;
+                            delete dept.category_bags_map;
                         });
                     });
                     logMessage += "========================================";
