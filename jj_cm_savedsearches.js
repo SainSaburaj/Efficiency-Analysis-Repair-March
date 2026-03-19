@@ -8400,6 +8400,7 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                             BUILTIN_RESULT.TYPE_INTEGER(CUSTOMRECORD_JJ_OPERATIONS.custrecord_jj_oprtns_bagno) AS bag_id,
                             BUILTIN_RESULT.TYPE_STRING(NVL(CUSTOMRECORD_JJ_BAG_GENERATION_SUB.altname, CUSTOMRECORD_JJ_BAG_GENERATION_SUB.bag_name_original)) AS bag_name,
                             BUILTIN_RESULT.TYPE_STRING(CUSTOMRECORD_JJ_BAG_GENERATION_SUB.name_0_0) AS category_name,
+                            BUILTIN_RESULT.TYPE_STRING(CUSTOMRECORD_JJ_BAG_GENERATION_SUB.print_design_name) AS print_design_name,
                             BUILTIN_RESULT.TYPE_FLOAT(CUSTOMRECORD_JJ_DIRECT_ISSUE_RETURN_SUB.custrecord_jj_dir_issued_pieces_info) AS issued_pieces_diamond,
                             BUILTIN_RESULT.TYPE_FLOAT(CUSTOMRECORD_JJ_DIRECT_ISSUE_RETURN_SUB.custrecord_jj_dir_loss_pieces_info) AS loss_pieces_diamond
                         FROM CUSTOMRECORD_JJ_OPERATIONS,
@@ -8416,13 +8417,15 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                 CUSTOMRECORD_JJ_BAG_GENERATION."ID" AS id_join,
                                 CUSTOMRECORD_JJ_BAG_GENERATION.name AS bag_name_original,
                                 CUSTOMRECORD_JJ_BAG_GENERATION.altname AS altname,
-                                CUSTOMRECORD_JJ_BAG_CORE_TRACKING_SUB.name_0 AS name_0_0
+                                CUSTOMRECORD_JJ_BAG_CORE_TRACKING_SUB.name_0 AS name_0_0,
+                                CUSTOMRECORD_JJ_BAG_CORE_TRACKING_SUB.print_design_name AS print_design_name
                             FROM CUSTOMRECORD_JJ_BAG_GENERATION,
                                 (SELECT CUSTOMRECORD_JJ_BAG_CORE_TRACKING."ID" AS id_0,
                                         CUSTOMRECORD_JJ_BAG_CORE_TRACKING."ID" AS id_join,
-                                        item_SUB.name AS name_0
+                                        item_SUB.name AS name_0,
+                                        item_SUB.itemid AS print_design_name
                                 FROM CUSTOMRECORD_JJ_BAG_CORE_TRACKING,
-                                    (SELECT item_0."ID" AS "ID", item_0."ID" AS id_join, CUSTOMRECORD_JJ_CATEGORY.name AS name
+                                    (SELECT item_0."ID" AS "ID", item_0."ID" AS id_join, CUSTOMRECORD_JJ_CATEGORY.name AS name, item_0.itemid AS itemid
                                     FROM item item_0, CUSTOMRECORD_JJ_CATEGORY
                                     WHERE item_0.custitem_jj_category = CUSTOMRECORD_JJ_CATEGORY."ID"(+)) item_SUB
                                 WHERE CUSTOMRECORD_JJ_BAG_CORE_TRACKING.custrecord_jj_bagcore_kt_col = item_SUB."ID"(+)) CUSTOMRECORD_JJ_BAG_CORE_TRACKING_SUB
@@ -8488,6 +8491,7 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                         const employeeId = record.employee_id;
                         const bagName = record.bag_name;
                         const categoryName = record.category_name;
+                        const printDesignName = record.print_design_name;
 
                         if (!locationId || !departmentId) return;
 
@@ -8508,13 +8512,19 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                 employees: {},
                                 unique_bags: new Set(),
                                 unique_categories: new Set(),
+                                category_print_design_map: {},
                                 issued_pieces_diamond: 0,
                                 loss_pieces_diamond: 0
                             };
                         }
 
                         if (bagName) groupedData[locationId].departments[departmentId].unique_bags.add(bagName);
-                        if (categoryName) groupedData[locationId].departments[departmentId].unique_categories.add(categoryName);
+                        if (categoryName) {
+                            groupedData[locationId].departments[departmentId].unique_categories.add(categoryName);
+                            if (printDesignName) {
+                                groupedData[locationId].departments[departmentId].category_print_design_map[categoryName] = printDesignName;
+                            }
+                        }
 
                         if (employeeId) {
                             if (!groupedData[locationId].departments[departmentId].employees[employeeId]) {
@@ -8523,11 +8533,17 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                     employee_id: employeeId,
                                     name: fullName || "Unknown Employee",
                                     unique_bags: new Set(),
-                                    unique_categories: new Set()
+                                    unique_categories: new Set(),
+                                    category_print_design_map: {}
                                 };
                             }
                             if (bagName) groupedData[locationId].departments[departmentId].employees[employeeId].unique_bags.add(bagName);
-                            if (categoryName) groupedData[locationId].departments[departmentId].employees[employeeId].unique_categories.add(categoryName);
+                            if (categoryName) {
+                                groupedData[locationId].departments[departmentId].employees[employeeId].unique_categories.add(categoryName);
+                                if (printDesignName) {
+                                    groupedData[locationId].departments[departmentId].employees[employeeId].category_print_design_map[categoryName] = printDesignName;
+                                }
+                            }
                         }
                     });
 
@@ -8541,6 +8557,7 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                 unique_bags_array: Array.from(emp.unique_bags),
                                 category_count: emp.unique_categories.size,
                                 unique_categories_array: Array.from(emp.unique_categories),
+                                category_print_design_map: emp.category_print_design_map,
                                 starting_qty: 0,
                                 loss_qty: 0,
                                 categories: []
@@ -8793,6 +8810,7 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                             BUILTIN_RESULT.TYPE_INTEGER(CUSTOMRECORD_JJ_OPERATIONS.custrecord_jj_oprtns_bagno) AS bag_id,
                             BUILTIN_RESULT.TYPE_STRING(NVL(CUSTOMRECORD_JJ_BAG_GENERATION_SUB.altname, CUSTOMRECORD_JJ_BAG_GENERATION_SUB.bag_name_original)) AS bag_name,
                             BUILTIN_RESULT.TYPE_STRING(CUSTOMRECORD_JJ_BAG_GENERATION_SUB.name_0_0) AS category_name,
+                            BUILTIN_RESULT.TYPE_STRING(CUSTOMRECORD_JJ_BAG_GENERATION_SUB.print_design_name) AS print_design_name,
                             BUILTIN_RESULT.TYPE_FLOAT(CUSTOMRECORD_JJ_DIRECT_ISSUE_RETURN_SUB.custrecord_jj_dir_issued_pieces_info) AS issued_pieces_diamond,
                             BUILTIN_RESULT.TYPE_FLOAT(CUSTOMRECORD_JJ_DIRECT_ISSUE_RETURN_SUB.custrecord_jj_dir_loss_pieces_info) AS loss_pieces_diamond
                         FROM CUSTOMRECORD_JJ_OPERATIONS,
@@ -8809,13 +8827,15 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                 CUSTOMRECORD_JJ_BAG_GENERATION."ID" AS id_join,
                                 CUSTOMRECORD_JJ_BAG_GENERATION.name AS bag_name_original,
                                 CUSTOMRECORD_JJ_BAG_GENERATION.altname AS altname,
-                                CUSTOMRECORD_JJ_BAG_CORE_TRACKING_SUB.name_0 AS name_0_0
+                                CUSTOMRECORD_JJ_BAG_CORE_TRACKING_SUB.name_0 AS name_0_0,
+                                CUSTOMRECORD_JJ_BAG_CORE_TRACKING_SUB.print_design_name AS print_design_name
                             FROM CUSTOMRECORD_JJ_BAG_GENERATION,
                                 (SELECT CUSTOMRECORD_JJ_BAG_CORE_TRACKING."ID" AS id_0,
                                         CUSTOMRECORD_JJ_BAG_CORE_TRACKING."ID" AS id_join,
-                                        item_SUB.name AS name_0
+                                        item_SUB.name AS name_0,
+                                        item_SUB.itemid AS print_design_name
                                 FROM CUSTOMRECORD_JJ_BAG_CORE_TRACKING,
-                                    (SELECT item_0."ID" AS "ID", item_0."ID" AS id_join, CUSTOMRECORD_JJ_CATEGORY.name AS name
+                                    (SELECT item_0."ID" AS "ID", item_0."ID" AS id_join, CUSTOMRECORD_JJ_CATEGORY.name AS name, item_0.itemid AS itemid
                                     FROM item item_0, CUSTOMRECORD_JJ_CATEGORY
                                     WHERE item_0.custitem_jj_category = CUSTOMRECORD_JJ_CATEGORY."ID"(+)) item_SUB
                                 WHERE CUSTOMRECORD_JJ_BAG_CORE_TRACKING.custrecord_jj_bagcore_kt_col = item_SUB."ID"(+)) CUSTOMRECORD_JJ_BAG_CORE_TRACKING_SUB
@@ -8884,6 +8904,7 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                         const employeeId = record.employee_id;
                         const bagName = record.bag_name;
                         const categoryName = record.category_name;
+                        const printDesignName = record.print_design_name;
 
                         if (!locationId || !departmentId) {
                             return;
@@ -8915,6 +8936,7 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                 employees: {},
                                 unique_bags: new Set(),
                                 unique_categories: new Set(),
+                                category_print_design_map: {},
                                 issued_pieces_diamond: 0,
                                 loss_pieces_diamond: 0
                             };
@@ -8928,6 +8950,9 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                         // Add unique category to department
                         if (categoryName) {
                             groupedData[locationId].departments[departmentId].unique_categories.add(categoryName);
+                            if (printDesignName) {
+                                groupedData[locationId].departments[departmentId].category_print_design_map[categoryName] = printDesignName;
+                            }
                         }
 
                         // Add employee to department if employee exists
@@ -8938,7 +8963,8 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                     employee_id: employeeId,
                                     name: fullName || "Unknown Employee",
                                     unique_bags: new Set(),
-                                    unique_categories: new Set()
+                                    unique_categories: new Set(),
+                                    category_print_design_map: {}
                                 };
                             }
                             // Add unique bag to employee
@@ -8948,6 +8974,9 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                             // Add unique category to employee
                             if (categoryName) {
                                 groupedData[locationId].departments[departmentId].employees[employeeId].unique_categories.add(categoryName);
+                                if (printDesignName) {
+                                    groupedData[locationId].departments[departmentId].employees[employeeId].category_print_design_map[categoryName] = printDesignName;
+                                }
                             }
                         }
                     });
@@ -8965,6 +8994,7 @@ define(['N/search', 'N/record', 'N/config', 'N/url', 'N/query', 'N/runtime', 'N/
                                 unique_bags_array: Array.from(emp.unique_bags),
                                 category_count: emp.unique_categories.size,
                                 unique_categories_array: Array.from(emp.unique_categories),
+                                category_print_design_map: emp.category_print_design_map,
                                 starting_qty: 0,
                                 loss_qty: 0,
                                 categories: []

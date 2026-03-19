@@ -456,6 +456,7 @@
                                 <!-- <th class="px-3 py-2 text-left font-semibold">Dates</th> -->
                                 <th class="px-3 py-2 text-left font-semibold">No. of Bags</th>
                                 <th class="px-3 py-2 text-left font-semibold">Item category</th>
+                                <th class="px-3 py-2 text-left font-semibold">Print Design (Assembly Item)</th>
 
                                 <th class="px-3 py-2 text-left font-semibold">TM Production Gold</th>
                                 <!-- <th class="px-3 py-2 text-left font-semibold">Issued Qty Gold</th> -->
@@ -498,6 +499,9 @@
                                         
                                         <!-- Item Category -->
                                         <td class="px-3 py-2 group-hover:shadow-md">{{ category || 'N/A' }}</td>
+
+                                        <!-- Print Design (Assembly Item) -->
+                                        <td class="px-3 py-2 group-hover:shadow-md">{{ dept.category_print_design_map?.[category] || '-' }}</td>
 
                                         <!-- Starting Qty Gold -->
                                         <td class="px-3 py-2 group-hover:shadow-md">{{ getCategoryStartingQty(dept, category) }}</td>
@@ -566,6 +570,9 @@
                                 <!-- Item Category (empty) -->
                                 <td class="px-3 py-2 font-semibold"></td>
 
+                                <!-- Print Design (empty) -->
+                                <td class="px-3 py-2 font-semibold"></td>
+
                                 <!-- Starting Qty Gold -->
                                 <td class="px-3 py-2">{{ totalDeptStartingQuantityGold }}</td>
 
@@ -630,6 +637,9 @@
                                             
                                             <!-- Item Category -->
                                             <td class="px-3 py-2 group-hover:shadow-md">{{ category || 'N/A' }}</td>
+                                            
+                                            <!-- Print Design (Assembly Item) -->
+                                            <td class="px-3 py-2 group-hover:shadow-md">{{ emp.category_print_design_map?.[category] || '-' }}</td>
                                             
                                             <!-- Starting Qty Gold -->
                                             <td class="px-3 py-2 group-hover:shadow-md">{{ getEmployeeCategoryStartingQtyGold(emp, category) }}</td>
@@ -702,6 +712,9 @@
                                 <td class="px-3 py-2 font-semibold text-center bg-blue-50">{{ totalEmpBagCount }}</td>
                                 
                                 <!-- Item Category (empty) -->
+                                <td class="px-3 py-2"></td>
+
+                                <!-- Print Design (empty) -->
                                 <td class="px-3 py-2"></td>
 
                                 <!-- Starting Qty Gold -->
@@ -1525,13 +1538,13 @@ export default {
             if (showEmployeesTable.value) {
                 // ── EMPLOYEE TABLE ──────────────────────────────────────
                 const EMP_HEADERS = [
-                    'Location','Department','Employee','No. of Bags','Item Category',
+                    'Location','Department','Employee','No. of Bags','Item Category','Print Design (Assembly Item)',
                     'TM Production Gold','Actual Production Gold','Loss Qty Gold','Gold Loss %',
                     'TM Production Diamond','Actual Production Diamond','Loss Qty Diamond','Diamond Loss %',
                     'Gold Recovery Weight (gm)','Net Loss Gold','Diamond Recovery Weight (ct)','Net Loss Diamond'
                 ];
                 const ECOL = EMP_HEADERS.length;
-                const EMP_LOSS_COLS = [8,9,12,13,15,17];
+                const EMP_LOSS_COLS = [9,10,13,14,16,18];
                 const ehRow = ws.addRow(EMP_HEADERS);
                 styleRow(ehRow, C.headerBg, headerFont, ECOL);
                 ehRow.height = 30;
@@ -1563,9 +1576,10 @@ export default {
 
                                 const isFirst = ci===0;
                                 const showLoc = isFirst && !locShown;
+                                const printDesign = (emp.category_print_design_map||{})[cat] || '-';
                                 const dr = ws.addRow([
                                     showLoc?locName:'', isFirst?deptName:'', isFirst?empName:'',
-                                    isFirst?bagCount:'', cat,
+                                    isFirst?bagCount:'', cat, printDesign,
                                     +roundToTwo(sG), +roundToTwo(aG), +roundToTwo(lG), roundToTwo(gLP)+'%',
                                     +roundToTwo(sD), +roundToTwo(aD), +roundToTwo(lD), roundToTwo(dLP)+'%',
                                     '-','-','-','-'
@@ -1577,7 +1591,7 @@ export default {
 
                             if (cats.length > 0) {
                                 const aG=sub.sG+sub.iG-sub.lG-sub.scG-sub.bG, aD=sub.sD+sub.iD-sub.lD-sub.scD-sub.bD;
-                                const sr = ws.addRow(['','',`Total (${empName})`,bagCount,'',+roundToTwo(sub.sG),+roundToTwo(aG),+roundToTwo(sub.lG),'',+roundToTwo(sub.sD),+roundToTwo(aD),+roundToTwo(sub.lD),'','','','','']);
+                                const sr = ws.addRow(['','',`Total (${empName})`,bagCount,'','',+roundToTwo(sub.sG),+roundToTwo(aG),+roundToTwo(sub.lG),'',+roundToTwo(sub.sD),+roundToTwo(aD),+roundToTwo(sub.lD),'','','','','']);
                                 styleRow(sr, C.subtotalBg, boldFont, ECOL);
                                 redCols(sr, [8,12]);
                             }
@@ -1588,13 +1602,13 @@ export default {
             } else {
                 // ── DEPARTMENT TABLE ────────────────────────────────────
                 const DEPT_HEADERS = [
-                    'Location','Department','No. of Bags','Item Category',
+                    'Location','Department','No. of Bags','Item Category','Print Design (Assembly Item)',
                     'TM Production Gold','Actual Production Gold','Loss Qty Gold','Gold Loss %',
                     'TM Production Diamond','Actual Production Diamond','Loss Qty Diamond','Diamond Loss %',
                     'Gold Recovery Weight (gm)','Net Loss Gold','Diamond Recovery Weight (ct)','Net Loss Diamond'
                 ];
                 const DCOL = DEPT_HEADERS.length;
-                const DEPT_LOSS_COLS = [7,8,11,12,14,16];
+                const DEPT_LOSS_COLS = [8,9,12,13,15,17];
                 const dhRow = ws.addRow(DEPT_HEADERS);
                 styleRow(dhRow, C.headerBg, headerFont, DCOL);
                 dhRow.height = 30;
@@ -1624,9 +1638,10 @@ export default {
 
                             const isFirst = ci===0;
                             const showLoc = isFirst && !locShown;
+                            const printDesign = (dept.category_print_design_map||{})[cat] || '-';
                             const dr = ws.addRow([
                                 showLoc?locName:'', isFirst?deptName:'',
-                                isFirst?bagCount:'', cat,
+                                isFirst?bagCount:'', cat, printDesign,
                                 +roundToTwo(sG), +roundToTwo(aG), +roundToTwo(lG), roundToTwo(gLP)+'%',
                                 +roundToTwo(sD), +roundToTwo(aD), +roundToTwo(lD), roundToTwo(dLP)+'%',
                                 '-','-','-','-'
@@ -1638,9 +1653,9 @@ export default {
 
                         if (cats.length > 0) {
                             const aG=sub.sG+sub.iG-sub.lG-sub.scG-sub.bG, aD=sub.sD+sub.iD-sub.lD-sub.scD-sub.bD;
-                            const sr = ws.addRow(['',`Total (${deptName})`,bagCount,'',+roundToTwo(sub.sG),+roundToTwo(aG),+roundToTwo(sub.lG),'',+roundToTwo(sub.sD),+roundToTwo(aD),+roundToTwo(sub.lD),'','','','','']);
+                            const sr = ws.addRow(['',`Total (${deptName})`,bagCount,'','',+roundToTwo(sub.sG),+roundToTwo(aG),+roundToTwo(sub.lG),'',+roundToTwo(sub.sD),+roundToTwo(aD),+roundToTwo(sub.lD),'','','','','']);
                             styleRow(sr, C.subtotalBg, boldFont, DCOL);
-                            redCols(sr, [7,11]);
+                            redCols(sr, [8,12]);
                         }
                     });
                 });
@@ -1649,9 +1664,9 @@ export default {
                 const allDeptBags = new Set();
                 locations.value.forEach(loc => (loc.departments||[]).forEach(dept => (dept.unique_bags_array||[]).forEach(b => allDeptBags.add(b))));
                 const grandDeptBagCount = allDeptBags.size || locations.value.reduce((s,loc)=>(loc.departments||[]).reduce((s2,dept)=>s2+parseInt(dept.bag_count||0),s),0);
-                const dgr = ws.addRow(['','GRAND TOTAL',grandDeptBagCount,'',+roundToTwo(gt.sG),+roundToTwo(aG),+roundToTwo(gt.lG),'',+roundToTwo(gt.sD),+roundToTwo(aD),+roundToTwo(gt.lD),'','','','','']);
+                const dgr = ws.addRow(['','GRAND TOTAL',grandDeptBagCount,'','',+roundToTwo(gt.sG),+roundToTwo(aG),+roundToTwo(gt.lG),'',+roundToTwo(gt.sD),+roundToTwo(aD),+roundToTwo(gt.lD),'','','','','']);
                 styleRow(dgr, C.grandBg, boldFont, DCOL);
-                redCols(dgr, [7,11]);
+                redCols(dgr, [8,12]);
             }
 
             // Download as .xlsx
@@ -2763,6 +2778,7 @@ export default {
                                     starting_qty: dept.starting_qty || 0,
                                     loss_qty: dept.loss_qty || 0,
                                     category_qty_map: dept.category_qty_map || {},
+                                    category_print_design_map: dept.category_print_design_map || {},
                                     employees: (dept.employees_array || []).map(emp => {
                                         // Build category_qty_map from categories array
                                         const categoryQtyMap = {};
@@ -2794,7 +2810,8 @@ export default {
                                             starting_qty: emp.starting_qty || 0,
                                             loss_qty: emp.loss_qty || 0,
                                             categories: emp.categories || [],
-                                            category_qty_map: categoryQtyMap
+                                            category_qty_map: categoryQtyMap,
+                                            category_print_design_map: emp.category_print_design_map || {}
                                         };
                                         return empObj;
                                     })
@@ -2818,6 +2835,7 @@ export default {
                                 console.log(`    Department Starting Qty: ${dept.starting_qty}`);
                                 console.log(`    Department Loss Qty: ${dept.loss_qty}`);
                                 console.log(`    Category Qty Map:`, dept.category_qty_map);
+                                console.log(`    Category Print Design Map:`, dept.category_print_design_map);
                                 console.log(`    Total Employees: ${dept.employees.length}`);
                                 
                                 dept.employees.forEach((emp, empIdx) => {
